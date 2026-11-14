@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Live data check, KopalaFPL</title>
+<style>
+  :root { --bg:#0f172a; --surface:#1e293b; --surface-2:#273449; --border:#334155; --ink:#f1f5f9; --muted:#94a3b8; --emerald:#10b981; --crimson:#ef4444; --blue:#3b82f6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .card { max-width: 900px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .muted { color: var(--muted); }
+  form { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  input, button { font: 600 15px system-ui, sans-serif; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); }
+  input { width: 180px; font-variant-numeric: tabular-nums; }
+  button { background: var(--blue); border: 0; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: progress; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 700; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ok { color: var(--emerald); font-weight: 700; }
+  .bad { color: var(--crimson); font-weight: 700; }
+  .wait { color: var(--muted); }
+  .summary { margin-top: 14px; font-weight: 700; }
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>Live data check</h1>
+  <p class="muted">Calls every FPL endpoint the dashboard uses, through your proxy, and shows what came back. Use this on your deployed site to confirm real data is flowing.</p>
+
+  <form id="checkForm" novalidate>
+    <input id="teamId" inputmode="numeric" maxlength="9" placeholder="Team ID" autocomplete="off" aria-label="FPL team ID">
+    <button id="runBtn" type="submit">Run check</button>
+  </form>
+
+  <table aria-label="Endpoint results">
+    <thead><tr><th>Endpoint</th><th>Result</th><th class="num">Time</th><th>What came back</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p class="summary" id="summary" role="status"></p>
+</main>
+
+<script type="module">
+  import { CONFIG } from './js/config.js';
+  import { storage } from './js/storage.js';
+  import { fetchRaw } from './js/api.js';
+
+  const $ = (id) => document.getElementById(id);
+  const rows = $('rows');
+  const saved = storage.read(CONFIG.keys.teamId);
+  if (saved) $('teamId').value = saved;
+
+  function line(name) {
+    const tr = document.createElement('tr');
+    const label = document.createElement('td');
+    label.textContent = name;
+    const result = document.createElement('td');
+    result.className = 'wait';
+    result.textContent = 'Waiting';
+    const time = document.createElement('td');
+    time.className = 'num';
+    const detail = document.createElement('td');
+    tr.append(label, result, time, detail);
+    rows.append(tr);
+    return { result, time, detail };
+  }
+
+  function report(cells, ok, ms, text) {
+    cells.result.className = ok ? 'ok' : 'bad';
+    cells.result.textContent = ok ? 'OK' : 'Failed';
+    cells.time.textContent = ms + ' ms';
+    cells.detail.textContent = text;
+    return ok;
+  }
+
+  async function check(cells, endpoint, describe) {
+    const t0 = performance.now();
+    try {
+      const body = await fetchRaw(endpoint);
+      const ms = Math.round(performance.now() - t0);
+      return { ok: report(cells, true, ms, describe(body)), body };
+    } catch (err) {
+      const ms = Math.round(performance.now() - t0);
+      report(cells, false, ms, err.message || 'No response');
+      return { ok: false, body: null };
+    }
+  }
+
+  $('checkForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = $('teamId').value.trim();
+    if (!/^\d{1,9}$/.test(id)) {
+      $('summary').textContent = 'Team ID should be a number, like 1234567.';
+      return;
+    }
+    storage.write(CONFIG.keys.teamId, id);
+    rows.replaceChildren();
+    $('summary').textContent = 'Checking…';
+    $('runBtn').disabled = true;
+
+    const cells = {
+      boot: line('bootstrap-static/'),
+      entry: line('entry/' + id + '/'),
+      history: line('entry/' + id + '/history/'),
+    };
+    const [boot, entry, history] = await Promise.all([
+      check(cells.boot, 'bootstrap-static/', (b) => `${b.elements.length} players, ${b.teams.length} teams, ${b.events.length} gameweeks`),
+      check(cells.entry, 'entry/' + id + '/', (b) => `Team "${b.name}", manager ${b.player_first_name} ${b.player_last_name}`),
+      check(cells.history, 'entry/' + id + '/history/', (b) => `${(b.current || []).length} gameweeks played`),
+    ]);
+
+    let passed = [boot.ok, entry.ok, history.ok].filter(Boolean).length;
+    let total = 3;
+    const current = history.body && history.body.current ? history.body.current : [];
+    const gw = current.length ? current[current.length - 1].event : null;
+
+    if (gw) {
+      const picks = line(`entry/${id}/event/${gw}/picks/`);
+      const live = line(`event/${gw}/live/`);
+      const fixtures = line('fixtures/');
+      const [p, l, f] = await Promise.all([
+        check(picks, `entry/${id}/event/${gw}/picks/`, (b) => `${b.picks.length} picks, active chip ${b.active_chip || 'none'}`),
+        check(live, `event/${gw}/live/`, (b) => `${b.elements.length} players with live stats`),
+        check(fixtures, 'fixtures/', (b) => `${b.length} fixtures this season`),
+      ]);
+      passed += [p.ok, l.ok, f.ok].filter(Boolean).length;
+      total += 3;
+    }
+
+    const favourites = storage.read(CONFIG.keys.leagues) || [];
+    for (const lg of favourites) {
+      const c = line(`leagues-classic/${lg}/standings/`);
+      const r = await check(c, `leagues-classic/${lg}/standings/`, (b) =>
+        `${(b.standings && b.standings.results || []).length} managers in ${b.league ? b.league.name : 'league ' + lg}`);
+      passed += r.ok ? 1 : 0;
+      total += 1;
+    }
+
+    $('summary').textContent = passed === total
+      ? `All ${total} checks passed. Real FPL data is flowing through the proxy.`
+      : `${passed} of ${total} checks passed. Failed rows show the reason.`;
+    $('runBtn').disabled = false;
+  });
+
+  if (saved) $('checkForm').requestSubmit();
+</script>
+</body>
+</html>

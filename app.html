@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D0F22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kopala FPL">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<title>Kopala FPL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --base: #0D0F22; --surface: #1B1233; --surface-2: #271A47; --line: #3B2D5E;
+    --ink: #F3F0FA; --muted: #A69EC4; --win: #16E08A; --copper: #E0A458;
+    --pitch: #0E5A41; --fpl: #37003C;
+    --r-s: 10px; --r-m: 18px; --r-l: 28px;
+    --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--base); color: var(--ink); font-family: var(--body); line-height: 1.5; }
+  h1, h2 { font-family: var(--display); letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
+  p { margin: 0; }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--win); outline-offset: 3px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+  .muted { color: var(--muted); }
+
+  /* Sign-in gate */
+  .gate { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; padding: 24px 0; }
+  .gate-inner { display: grid; gap: 18px; width: 100%; max-width: 440px; margin: 0 auto; padding: 0 20px; }
+  .mark { width: 72px; height: 72px; object-fit: contain; }
+  .gate h1 { font-size: clamp(34px, 8vw, 48px); font-weight: 800; }
+  .lede { color: var(--muted); font-size: 17px; }
+  form { display: grid; gap: 12px; }
+  label { font-weight: 600; font-size: 15px; }
+  input {
+    width: 100%; margin-top: 8px; padding: 16px; font: 600 20px/1 var(--body);
+    font-variant-numeric: tabular-nums; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--r-s);
+  }
+  input:focus { border-color: var(--win); outline: none; }
+  input::placeholder { color: var(--muted); opacity: .6; }
+  .help { color: var(--muted); font-size: 14px; }
+  .error {
+    color: var(--copper); background: var(--surface); border-left: 3px solid var(--copper);
+    border-radius: var(--r-s); padding: 12px 14px; font-size: 15px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: block; width: 100%; padding: 14px 22px; border: 0; border-radius: 999px;
+    background: var(--win); color: var(--base); font: 700 16px/1 var(--body);
+    text-align: center; text-decoration: none; cursor: pointer;
+  }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  .ghost {
+    display: block; width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface-2); color: var(--ink); font: 700 15px/1 var(--body); cursor: pointer;
+  }
+
+  /* App shell */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 20px; }
+  .brand { width: 40px; height: 40px; object-fit: contain; }
+  .top-team { color: var(--muted); font-size: 14px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  main { padding-top: 24px; padding-bottom: 120px; display: grid; gap: 18px; }
+  .page-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .page-head h1 { font-size: clamp(32px, 7vw, 40px); font-weight: 800; }
+  .sub { color: var(--muted); font-size: 15px; }
+  .score {
+    font-family: var(--display); font-weight: 800; font-size: clamp(88px, 22vw, 128px);
+    line-height: .9; color: var(--win); font-variant-numeric: tabular-nums;
+  }
+  .hit { color: var(--copper); font-size: 15px; font-weight: 600; }
+  .stats { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  .stat { background: var(--surface); border-radius: var(--r-m); padding: 18px; display: grid; gap: 4px; }
+  .stat .label { color: var(--muted); font-size: 14px; }
+  .stat .value { font-family: var(--display); font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; }
+  .up { color: var(--win); }
+  .down { color: var(--copper); }
+  .formation { font-family: var(--display); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .section-title { font-size: 20px; }
+  .hint, .notice { color: var(--muted); font-size: 14px; }
+  .notice { background: var(--surface); border-left: 3px solid var(--copper); border-radius: var(--r-s); padding: 12px 14px; color: var(--ink); font-size: 15px; }
+  .status { color: var(--muted); font-size: 14px; min-height: 1.4em; }
+
+  /* Pitch */
+  .pitch {
+    position: relative; background: var(--pitch); border-radius: var(--r-m); aspect-ratio: 3 / 4;
+    max-width: 360px; width: 100%; margin: 0 auto; overflow: hidden;
+    display: grid; grid-template-rows: repeat(4, 1fr); padding: 12px 6px;
+  }
+  .pitch::before { content: ""; position: absolute; inset: 10px; border: 2px solid rgba(255,255,255,.2); border-radius: 14px; pointer-events: none; }
+  .row { display: flex; justify-content: space-evenly; align-items: center; position: relative; z-index: 1; }
+  .player { display: grid; justify-items: center; gap: 4px; width: 66px; }
+  .shirt {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--fpl); color: var(--ink);
+    display: grid; place-items: center; font-size: 11px; font-weight: 700;
+    font-variant-numeric: tabular-nums; box-shadow: 0 0 0 3px var(--pitch);
+  }
+  .shirt.cap { background: var(--win); color: var(--base); }
+  .shirt.vice { box-shadow: 0 0 0 3px var(--pitch), 0 0 0 5px var(--win); }
+  .name {
+    font-size: 12px; font-weight: 600; background: rgba(13,15,34,.55); padding: 1px 6px;
+    border-radius: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Lists */
+  .list { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--r-m); overflow: hidden; }
+  .list li { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .list li:last-child { border-bottom: 0; }
+  .who { display: grid; gap: 2px; min-width: 0; }
+  .who b { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who small { color: var(--muted); font-size: 13px; }
+  .pts { font-family: var(--display); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; text-align: right; }
+  .pts.boost { color: var(--win); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+  .badge.cap { background: var(--win); color: var(--base); }
+  .badge.vice { border: 1px solid var(--win); }
+
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tabs button {
+    padding: 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+    color: var(--muted); font: 700 15px/1 var(--body); cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: var(--win); color: var(--base); border-color: var(--win); }
+
+  .ticker-wrap { overflow-x: auto; background: var(--surface); border-radius: var(--r-m); }
+  .ticker { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 13px; }
+  .ticker th, .ticker td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ticker thead th { color: var(--muted); font-weight: 600; }
+  .ticker th[scope="row"] { text-align: left; font-weight: 600; white-space: nowrap; }
+  .fdr { display: inline-block; min-width: 34px; margin: 2px; padding: 4px 6px; border-radius: 6px; font-weight: 700; font-size: 12px; }
+  .fdr.d1, .fdr.d2 { background: var(--win); color: var(--base); }
+  .fdr.d3 { background: var(--surface-2); color: var(--ink); }
+  .fdr.d4 { background: var(--copper); color: var(--base); }
+  .fdr.d5 { background: #B8414F; color: var(--ink); }
+
+  .whatif { background: var(--surface); border-radius: var(--r-m); padding: 16px; display: grid; gap: 10px; }
+  .whatif label { font-weight: 600; font-size: 14px; color: var(--muted); }
+  .whatif select {
+    width: 100%; padding: 14px; font: 600 16px/1 var(--body); color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-s);
+  }
+  .whatif-result { font-family: var(--display); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+
+  /* Bottom navigation */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--base); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .tabbar ul { list-style: none; margin: 0 auto; padding: 6px; max-width: 420px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--surface-2); border-radius: 999px; }
+  .tabbar a { display: block; text-align: center; text-decoration: none; color: var(--muted); font: 600 12px/1.2 var(--body); padding: 12px 2px; border-radius: 999px; }
+  .tabbar a[aria-current="page"] { background: var(--win); color: var(--base); font-weight: 700; }
+
+  @media (min-width: 600px) { .stats { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Sign-in gate: shown until a team ID is saved -->
+<section id="signin" class="gate" hidden>
+  <div class="gate-inner">
+    <img src="/logo.png" alt="" class="mark">
+    <h1>Sign in with your team ID</h1>
+    <p class="lede">Your team ID is the number in your FPL points page address. No password needed.</p>
+    <form id="login-form" novalidate>
+      <div>
+        <label for="team-id">FPL team ID</label>
+        <input id="team-id" inputmode="numeric" autocomplete="off" maxlength="9" placeholder="1234567" aria-describedby="help">
+        <p id="help" class="help">Find it in the address of your points page, after /entry/.</p>
+      </div>
+      <p id="signin-error" class="error" role="alert" hidden></p>
+      <button class="btn" id="signin-btn" type="submit">Sign in</button>
+    </form>
+  </div>
+</section>
+
+<!-- The app: one page, three views switched by the URL hash -->
+<div id="app" hidden>
+  <header class="wrap top">
+    <img src="/logo.png" alt="Kopala FPL" class="brand">
+    <span class="top-team" id="top-team"></span>
+  </header>
+
+  <main class="wrap">
+    <section data-view="home" hidden aria-labelledby="home-title">
+      <header class="page-head">
+        <h1 id="home-title">Home</h1>
+        <span class="sub" id="manager-name"></span>
+      </header>
+      <div>
+        <div class="score" id="gw-points" aria-label="Gameweek points">--</div>
+        <p class="muted" id="gw-label">Gameweek points</p>
+        <p class="hit" id="gw-hit" hidden></p>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="label">Overall rank</span><span class="value" id="overall-rank">--</span></div>
+        <div class="stat"><span class="label">Rank change</span><span class="value" id="rank-change">--</span></div>
+        <div class="stat"><span class="label">Overall points</span><span class="value" id="overall-points">--</span></div>
+        <div class="stat"><span class="label">Gameweeks played</span><span class="value" id="gw-count">--</span></div>
+      </div>
+      <a class="btn" href="#team">View my team</a>
+      <button class="ghost" id="sign-out" type="button">Sign out</button>
+    </section>
+
+    <section data-view="team" hidden aria-labelledby="team-title">
+      <header class="page-head">
+        <h1 id="team-title">My team</h1>
+        <span class="formation" id="formation"></span>
+      </header>
+      <div class="pitch" id="pitch" role="group" aria-label="Starting eleven"></div>
+      <h2 class="section-title">Bench</h2>
+      <ul class="list" id="bench" aria-label="Bench"></ul>
+      <h2 class="section-title">What-if: captain</h2>
+      <div class="whatif">
+        <label for="whatif-captain">Choose a captain to test</label>
+        <select id="whatif-captain"></select>
+        <p class="whatif-result" id="whatif-result" aria-live="polite"></p>
+        <p class="hint">Uses live points so far. It ignores automatic substitutions and assumes the captain bonus is doubled, or tripled with Triple Captain.</p>
+      </div>
+
+      <p class="hint">Read-only. Lineup changes are made on the FPL website or app before the deadline.</p>
+    </section>
+
+    <section data-view="live" hidden aria-labelledby="live-title">
+      <header class="page-head">
+        <h1 id="live-title">Live</h1>
+        <span class="sub" id="live-gw"></span>
+      </header>
+      <div class="score" id="live-total" aria-label="Points so far">--</div>
+      <p class="hint">Updates every minute while this page is open.</p>
+
+      <div class="stats" id="live-status" aria-label="Your starting eleven status"></div>
+
+      <h2 class="section-title">Captain</h2>
+      <ul class="list" id="live-captain" aria-label="Captain"></ul>
+
+      <h2 class="section-title">Threats</h2>
+      <ul class="list" id="live-threats" aria-label="Threats outside your team"></ul>
+      <p class="hint">The most owned players outside your team. Each one that scores takes points from managers who do not own them.</p>
+
+      <h2 class="section-title">Differentials</h2>
+      <ul class="list" id="live-diffs" aria-label="Differentials in your team"></ul>
+      <p class="hint">Starters owned by under 10% of managers. They gain you more when they score.</p>
+      <h2 class="section-title">Starting eleven</h2>
+      <ul class="list" id="live-starters" aria-label="Starting eleven points"></ul>
+      <h2 class="section-title">Bench</h2>
+      <ul class="list" id="live-bench" aria-label="Bench, not counted"></ul>
+      <h2 class="section-title">Events in your squad</h2>
+      <div class="stats" id="team-events" aria-label="Events in your squad"></div>
+
+      <h2 class="section-title">Matches</h2>
+      <ul class="list" id="match-list" aria-label="Matches this gameweek"></ul>
+      <p class="hint">Scorers, assists and cards from FPL. ★ marks players in your squad.</p>
+
+      <h2 class="section-title">Gameweek overview</h2>
+      <ul class="list" id="overview-list" aria-label="Gameweek overview"></ul>
+
+      <h2 class="section-title">Who is scoring</h2>
+<ul class="list" id="events-list" aria-label="Goals, assists and clean sheets"></ul>
+<p class="hint">Goals, assists, clean sheets and bonus so far across all players. "Yours" marks players in your team. "vs average manager" compares your points with the average manager using overall ownership, not your rank group.</p>
+      <p class="notice">Automatic substitutions are not applied yet. A starter who does not play scores 0 here.</p>
+    </section>
+
+    <section data-view="prices" hidden aria-labelledby="prices-title">
+      <header class="page-head">
+        <h1 id="prices-title">Prices</h1>
+        <span class="sub">Net transfers this gameweek</span>
+      </header>
+      <div class="tabs" role="group" aria-label="Price view">
+        <button type="button" data-tab="rising" aria-selected="true">Rising</button>
+        <button type="button" data-tab="falling" aria-selected="false">Falling</button>
+      </div>
+      <p class="hint">These are net transfers this gameweek, not price predictions. Net transfers show which way the pressure is going.</p>
+      <a class="btn" href="https://fantasy.premierleague.com/" target="_blank" rel="noopener">Official price changes on FPL</a>
+      <ul class="list" id="price-list" aria-label="Price pressure"></ul>
+    </section>
+
+    <section data-view="fixtures" hidden aria-labelledby="fixtures-title">
+      <header class="page-head">
+        <h1 id="fixtures-title">Fixtures</h1>
+        <span class="sub">Your squad's next three</span>
+      </header>
+      <ul class="list" id="fixture-list" aria-label="Upcoming fixtures"></ul>
+      <p class="hint">The number in brackets is fixture difficulty, from 1 (easiest) to 5 (hardest). @ means away.</p>
+
+      <h2 class="section-title">Season ticker</h2>
+      <div class="ticker-wrap">
+        <table class="ticker" id="ticker" aria-label="Fixture difficulty by club, next five gameweeks"></table>
+      </div>
+      <p class="hint">Next five gameweeks. Green is easier, red is harder. Capitals are home games, lower case are away. Clubs are sorted from easiest to hardest. A blank week counts as a medium fixture.</p>
+    </section>
+
+    <p class="status" id="status" role="status"></p>
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    <ul>
+      <li><a href="#home" data-link="home">Home</a></li>
+      <li><a href="#team" data-link="team">My team</a></li>
+      <li><a href="#live" data-link="live">Live</a></li>
+      <li><a href="#prices" data-link="prices">Prices</a></li>
+      <li><a href="#fixtures" data-link="fixtures">Fixtures</a></li>
+    </ul>
+  </nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Same key and proxy as the existing app, so saved sign-ins carry over.
+  var ID_KEY = 'kopala_id';
+  var SNAP_KEY = 'kopala_snapshot';
+  var PROXY = '/.netlify/functions/fpl-proxy?endpoint=';
+  var LIVE_MS = 60000;
+  var TYPE_ORDER = [1, 2, 3, 4];
+  var TYPE_NAME = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+  var VIEWS = ['home', 'team', 'live', 'prices', 'fixtures'];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { id: null, boot: null, fixtures: [], gw: null, tab: 'rising' };
+  var liveTimer = null;
+
+  // ---------- Start ----------
+
+  $('login-form').addEventListener('submit', onLogin);
+  $('sign-out').addEventListener('click', signOut);
+  document.querySelectorAll('[data-tab]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      state.tab = btn.getAttribute('data-tab');
+      document.querySelectorAll('[data-tab]').forEach(function (b) {
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      paintPrices();
+    });
+  });
+  window.addEventListener('hashchange', route);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stopLive();
+    else if (currentView() === 'live') { refresh(); startLive(); }
+  });
+
+  state.id = localStorage.getItem(ID_KEY);
+  if (!state.id) {
+    $('signin').hidden = false;
+  } else {
+    showApp();
+    var snap = readJson(SNAP_KEY);
+    if (snap && snap.id === state.id) {
+      paint(snap);
+      setStatus('Showing saved data from ' + time(snap.savedAt));
+    }
+    refresh();
+  }
+
+  // ---------- Sign in and out ----------
+
+  function onLogin(event) {
+    event.preventDefault();
+    var id = $('team-id').value.trim();
+    setError('');
+    if (!/^\d{1,9}$/.test(id)) return setError('Team ID should be a number, like 1234567.');
+
+    var btn = $('signin-btn');
+    btn.disabled = true;
+    btn.textContent = 'Checking your team';
+
+    api('entry/' + id + '/')
+      .then(function () {
+        localStorage.setItem(ID_KEY, id);
+        state.id = id;
+        showApp();
+        refresh();
+      })
+      .catch(function (err) {
+        setError(err.status === 404
+          ? 'We could not find that team, or the data service is unavailable. Check the ID first. If it is correct, the fpl-proxy function is not deployed.'
+          : (err.message || 'We could not check that team. Try again in a minute.'));
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+      });
+  }
+
+  function signOut() {
+    localStorage.removeItem(ID_KEY);
+    localStorage.removeItem(SNAP_KEY);
+    state.id = null;
+    stopLive();
+    $('app').hidden = true;
+    $('signin').hidden = false;
+    $('team-id').value = '';
+    history.replaceState(null, '', location.pathname);
+  }
+
+  function showApp() {
+    $('signin').hidden = true;
+    $('app').hidden = false;
+    route();
+  }
+
+  // ---------- Routing ----------
+
+  function currentView() {
+    var name = (location.hash || '#home').slice(1);
+    return VIEWS.indexOf(name) >= 0 ? name : 'home';
+  }
+
+  function route() {
+    var view = currentView();
+    document.querySelectorAll('[data-view]').forEach(function (section) {
+      section.hidden = section.getAttribute('data-view') !== view;
+    });
+    document.querySelectorAll('[data-link]').forEach(function (link) {
+      if (link.getAttribute('data-link') === view) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    if (view === 'live') { refresh(); startLive(); }
+    else stopLive();
+    if (view === 'prices' || view === 'fixtures') refresh();
+  }
+
+  function startLive() {
+    if (!liveTimer) liveTimer = setInterval(refresh, LIVE_MS);
+  }
+
+  function stopLive() {
+    clearInterval(liveTimer);
+    liveTimer = null;
+  }
+
+  // ---------- Data ----------
+
+  function api(path) {
+    return fetch(PROXY + path).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        if (!res.ok) {
+          var err = new Error((data && data.error) || (res.status === 404
+            ? 'Could not load your data (404). Check that the fpl-proxy function is deployed.'
+            : 'FPL responded with ' + res.status + '. Try again in a minute.'));
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  var refreshing = false;
+  function refresh() {
+    if (!state.id || refreshing) return Promise.resolve();
+    refreshing = true;
+
+    var id = state.id;
+    return Promise.all([
+      api('entry/' + id + '/'),
+      api('entry/' + id + '/history/'),
+      api('bootstrap-static/')
+    ]).then(function (parts) {
+      var entry = parts[0], current = parts[1].current || [], boot = parts[2];
+      if (!current.length) {
+        setStatus('Your season has not started yet. Your team appears after the first gameweek.');
+        return;
+      }
+      var latest = current[current.length - 1];
+      var prev = current.length > 1 ? current[current.length - 2] : null;
+      var gw = latest.event;
+
+      return Promise.all([
+        api('entry/' + id + '/event/' + gw + '/picks/'),
+        api('event/' + gw + '/live/'),
+        api('fixtures/').catch(function () { return []; })
+      ]).then(function (rest) {
+        state.boot = boot;
+        state.fixtures = rest[2] || [];
+        state.gw = gw;
+        state.live = rest[1];
+        var model = buildModel({ id: id, entry: entry, history: current, latest: latest, prev: prev, gw: gw, picks: rest[0], live: rest[1], boot: boot });
+        writeJson(SNAP_KEY, model);
+        paint(model);
+        paintMarket(model);
+        setStatus('Updated ' + time(model.savedAt));
+      });
+    }).catch(function (err) {
+      var snap = readJson(SNAP_KEY);
+      if (snap && snap.id === id) {
+        paint(snap);
+        setStatus('Showing saved data from ' + time(snap.savedAt) + '. We could not refresh just now.');
+      } else {
+        setStatus(err.message || 'We could not load your team. Try again in a minute.');
+      }
+    }).finally(function () {
+      refreshing = false;
+    });
+  }
+
+  // ---------- Model ----------
+
+  function buildModel(d) {
+    var players = new Map(d.boot.elements.map(function (p) { return [p.id, p]; }));
+    var teams = new Map(d.boot.teams.map(function (t) { return [t.id, t.short_name]; }));
+    var stats = new Map(d.live.elements.map(function (e) { return [e.id, e.stats]; }));
+
+    var squad = d.picks.picks.map(function (p) {
+      var pl = players.get(p.element) || {};
+      var s = stats.get(p.element) || {};
+      var start = p.position <= 11;
+      var points = s.total_points || 0;
+      return {
+        id: p.element,
+        name: pl.web_name || 'Player',
+        team: teams.get(pl.team) || '',
+        type: pl.element_type || 0,
+        start: start,
+        isCaptain: !!p.is_captain,
+        isViceCaptain: !!p.is_vice_captain,
+        points: points,
+        multiplier: start ? Math.max(p.multiplier || 1, 1) : 0,
+        counted: start ? points * Math.max(p.multiplier || 1, 1) : 0,
+        minutes: s.minutes || 0
+      };
+    });
+
+    var starters = squad.filter(function (p) { return p.start; });
+    var bench = squad.filter(function (p) { return !p.start; }).sort(function (a, b) { return a.type - b.type; });
+    var count = function (t) { return starters.filter(function (p) { return p.type === t; }).length; };
+
+    return {
+      id: d.id,
+      savedAt: Date.now(),
+      gw: d.gw,
+      chip: d.picks.active_chip || null,
+      manager: {
+        name: d.entry.name,
+        person: ((d.entry.player_first_name || '') + ' ' + (d.entry.player_last_name || '')).trim()
+      },
+      home: {
+        points: d.latest.points,
+        hit: d.latest.event_transfers_cost || 0,
+        rank: d.latest.overall_rank,
+        rankChange: d.prev ? d.prev.overall_rank - d.latest.overall_rank : null,
+        overallPoints: d.latest.total_points,
+        gamesPlayed: d.history.length
+      },
+      formation: count(2) + '-' + count(3) + '-' + count(4),
+      total: starters.reduce(function (sum, p) { return sum + p.counted; }, 0),
+      squad: squad,
+      starters: starters,
+      bench: bench
+    };
+  }
+
+  // ---------- Render ----------
+
+  function paint(m) {
+    $('top-team').textContent = m.manager.name;
+
+    // Home
+    $('manager-name').textContent = m.manager.person;
+    $('gw-points').textContent = String(m.home.points);
+    $('gw-label').textContent = 'Gameweek ' + m.gw + ' points';
+    $('gw-hit').hidden = !(m.home.hit > 0);
+    $('gw-hit').textContent = m.home.hit > 0 ? 'Includes a points hit of -' + m.home.hit : '';
+    $('overall-rank').textContent = formatNumber(m.home.rank);
+    $('overall-points').textContent = formatNumber(m.home.overallPoints);
+    $('gw-count').textContent = String(m.home.gamesPlayed);
+    var change = $('rank-change');
+    change.className = 'value';
+    if (m.home.rankChange === null || m.home.rankChange === 0) {
+      change.textContent = 'No change';
+    } else if (m.home.rankChange > 0) {
+      change.textContent = 'Up ' + formatNumber(m.home.rankChange);
+      change.classList.add('up');
+    } else {
+      change.textContent = 'Down ' + formatNumber(Math.abs(m.home.rankChange));
+      change.classList.add('down');
+    }
+
+    // My team
+    $('formation').textContent = m.formation;
+    paintPitch(m.starters);
+    paintWhatIf(m);
+    paintList('bench', m.bench, function (p) {
+      return item(p.name, TYPE_NAME[p.type] + ' · ' + p.team, badgeFor(p), '');
+    });
+
+    // Live
+    $('live-gw').textContent = 'Gameweek ' + m.gw + (m.chip ? ' · ' + chipName(m.chip) : '');
+    $('live-total').textContent = String(m.total);
+    paintList('live-starters', m.starters.slice().sort(function (a, b) { return a.type - b.type; }), function (p) {
+      return item(p.name, TYPE_NAME[p.type] + ' · ' + p.team + (p.minutes ? ' · ' + p.minutes + ' min' : ''), badgeFor(p), String(p.counted), p.multiplier > 1);
+    });
+    paintList('live-bench', m.bench, function (p) {
+      return item(p.name, TYPE_NAME[p.type] + ' · ' + p.team, badgeFor(p), String(p.points) + ' (not counted)');
+    });
+  }
+
+  function paintPitch(starters) {
+    var pitch = $('pitch');
+    pitch.replaceChildren();
+    TYPE_ORDER.forEach(function (type) {
+      var row = document.createElement('div');
+      row.className = 'row';
+      starters.filter(function (p) { return p.type === type; }).forEach(function (p) {
+        var player = document.createElement('div');
+        player.className = 'player';
+        player.setAttribute('aria-label', p.name + (p.isCaptain ? ', captain' : p.isViceCaptain ? ', vice-captain' : ''));
+        var shirt = document.createElement('span');
+        shirt.className = 'shirt' + (p.isCaptain ? ' cap' : p.isViceCaptain ? ' vice' : '');
+        shirt.textContent = p.isCaptain ? 'C' : p.isViceCaptain ? 'V' : p.name.slice(0, 3).toUpperCase();
+        var name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = p.name;
+        player.append(shirt, name);
+        row.append(player);
+      });
+      pitch.append(row);
+    });
+  }
+
+  function paintList(id, players, build) {
+    var list = $(id);
+    list.replaceChildren();
+    if (!players.length) {
+      var empty = document.createElement('li');
+      empty.textContent = 'No players';
+      list.append(empty);
+      return;
+    }
+    players.forEach(function (p) { list.append(build(p)); });
+  }
+
+  function item(name, meta, badge, value, boost) {
+    var li = document.createElement('li');
+    var who = document.createElement('div');
+    who.className = 'who';
+    var title = document.createElement('b');
+    title.textContent = name;
+    if (badge) title.append(badge);
+    var small = document.createElement('small');
+    small.textContent = meta;
+    who.append(title, small);
+    li.append(who);
+    if (value !== '') {
+      var pts = document.createElement('span');
+      pts.className = 'pts' + (boost ? ' boost' : '');
+      pts.textContent = value;
+      li.append(pts);
+    }
+    return li;
+  }
+
+  function badgeFor(p) {
+    if (!p.isCaptain && !p.isViceCaptain) return null;
+    var badge = document.createElement('span');
+    badge.className = 'badge ' + (p.isCaptain ? 'cap' : 'vice');
+    badge.textContent = p.isCaptain ? 'Captain' : 'Vice';
+    return badge;
+  }
+
+  // ---------- Prices and fixtures ----------
+
+  function paintMarket(m) {
+    if (!state.boot) return;
+    paintPrices();
+    paintFixtures(m);
+    paintTicker(m);
+    paintEvents(m);
+    paintMatches(m);
+    paintOverview(m);
+    paintLiveDeck(m);
+  }
+
+  function paintPrices() {
+    if (!state.boot) return;
+    var teams = new Map(state.boot.teams.map(function (t) { return [t.id, t.short_name]; }));
+    var rows = state.boot.elements.map(function (p) {
+      return {
+        name: p.web_name,
+        team: teams.get(p.team) || '',
+        price: p.now_cost / 10,
+        net: p.transfers_in_event - p.transfers_out_event,
+        owned: parseFloat(p.selected_by_percent) || 0
+      };
+    });
+    rows.sort(function (a, b) {
+      return state.tab === 'falling' ? a.net - b.net : b.net - a.net;
+    });
+    var list = $('price-list');
+    list.replaceChildren();
+    rows.slice(0, 20).forEach(function (r) {
+      list.append(item(
+        r.name,
+        r.team + ' · ' + r.owned.toFixed(1) + '% owned · ' + (r.net > 0 ? '+' : '') + formatNumber(r.net) + ' net',
+        null,
+        '£' + r.price.toFixed(1) + 'm',
+        state.tab === 'rising'
+      ));
+    });
+  }
+
+  function paintFixtures(m) {
+    if (!state.boot) return;
+    var teams = new Map(state.boot.teams.map(function (t) { return [t.id, t.short_name]; }));
+    var playerTeam = new Map(state.boot.elements.map(function (p) { return [p.id, p.team]; }));
+    var teamIds = new Set(m.squad.map(function (p) { return playerTeam.get(p.id); }));
+    var upcoming = state.fixtures
+      .filter(function (f) { return !f.finished && f.event >= m.gw; })
+      .sort(function (a, b) { return new Date(a.kickoff_time) - new Date(b.kickoff_time); });
+
+    var list = $('fixture-list');
+    list.replaceChildren();
+    Array.from(teamIds).sort(function (a, b) {
+      return (teams.get(a) || '').localeCompare(teams.get(b) || '');
+    }).forEach(function (tid) {
+      var next = upcoming.filter(function (f) { return f.team_h === tid || f.team_a === tid; }).slice(0, 3);
+      var text = next.map(function (f) {
+        var home = f.team_h === tid;
+        var opponent = teams.get(home ? f.team_a : f.team_h) || '';
+        var difficulty = home ? f.team_h_difficulty : f.team_a_difficulty;
+        return (home ? '' : '@') + opponent + ' (' + difficulty + ')';
+      }).join('   ');
+      list.append(item(teams.get(tid) || 'Team', text || 'No fixtures listed', null, ''));
+    });
+    if (!teamIds.size) list.append(item('No squad loaded', 'Sign in and wait for your team to load', null, ''));
+  }
+
+  function paintTicker(m) {
+    if (!state.boot || !state.fixtures) return;
+    var table = $('ticker');
+    table.replaceChildren();
+
+    var weeks = [];
+    for (var w = m.gw; w < m.gw + 5 && w <= 38; w++) weeks.push(w);
+
+    var teamById = new Map(state.boot.teams.map(function (t) { return [t.id, t]; }));
+    var playerTeamOf = new Map(state.boot.elements.map(function (p) { return [p.id, p.team]; }));
+
+    var rows = state.boot.teams.map(function (t) {
+      var score = 0;
+      var cells = weeks.map(function (week) {
+        var fixtures = state.fixtures.filter(function (f) {
+          return f.event === week && (f.team_h === t.id || f.team_a === t.id);
+        });
+        if (!fixtures.length) { score += 3; return []; }
+        return fixtures.map(function (f) {
+          var home = f.team_h === t.id;
+          var opponent = teamById.get(home ? f.team_a : f.team_h);
+          var difficulty = home ? f.team_h_difficulty : f.team_a_difficulty;
+          score += difficulty;
+          return {
+            label: home ? opponent.short_name.toUpperCase() : opponent.short_name.toLowerCase(),
+            difficulty: difficulty
+          };
+        });
+      });
+      var mine = m.squad.filter(function (p) { return playerTeamOf.get(p.id) === t.id; }).length;
+      return { name: t.name, score: score, cells: cells, mine: mine };
+    }).sort(function (a, b) { return a.score - b.score; });
+
+    var head = document.createElement('tr');
+    var corner = document.createElement('th');
+    corner.scope = 'col';
+    corner.textContent = 'Club';
+    head.append(corner);
+    weeks.forEach(function (week) {
+      var th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = 'GW ' + week;
+      head.append(th);
+    });
+    var thead = document.createElement('thead');
+    thead.append(head);
+    table.append(thead);
+
+    var tbody = document.createElement('tbody');
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      var name = document.createElement('th');
+      name.scope = 'row';
+      name.textContent = r.name + (r.mine ? '  ·  ' + r.mine + ' yours' : '');
+      tr.append(name);
+      r.cells.forEach(function (fixtures) {
+        var td = document.createElement('td');
+        fixtures.forEach(function (f) {
+          var pill = document.createElement('span');
+          pill.className = 'fdr d' + f.difficulty;
+          pill.textContent = f.label;
+          td.append(pill);
+        });
+        tr.append(td);
+      });
+      tbody.append(tr);
+    });
+    table.append(tbody);
+  }
+
+  function paintEvents(m) {
+    if (!state.boot || !state.live) return;
+    var teams = new Map(state.boot.teams.map(function (t) { return [t.id, t.short_name]; }));
+    var players = new Map(state.boot.elements.map(function (p) { return [p.id, p]; }));
+    var mine = new Set(m.squad.map(function (p) { return p.id; }));
+    var mult = new Map(m.squad.map(function (p) { return [p.id, p.multiplier]; }));
+
+    var rows = state.live.elements
+      .filter(function (e) {
+        var s = e.stats;
+        return s.goals_scored > 0 || s.assists > 0 || s.clean_sheets > 0 || s.bonus > 0;
+      })
+      .sort(function (a, b) { return b.stats.total_points - a.stats.total_points; })
+      .slice(0, 25);
+
+    var sums = { goals: 0, assists: 0, clean: 0, bonus: 0 };
+    state.live.elements.forEach(function (e) {
+      if (!mine.has(e.id)) return;
+      sums.goals += e.stats.goals_scored || 0;
+      sums.assists += e.stats.assists || 0;
+      sums.clean += e.stats.clean_sheets || 0;
+      sums.bonus += e.stats.bonus || 0;
+    });
+    var box = $('team-events');
+    box.replaceChildren();
+    [['Goals', sums.goals], ['Assists', sums.assists], ['Clean sheets', sums.clean], ['Bonus', sums.bonus]]
+      .forEach(function (pair) {
+        var tile = document.createElement('div');
+        tile.className = 'stat';
+        var label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = pair[0];
+        var value = document.createElement('span');
+        value.className = 'value';
+        value.textContent = String(pair[1]);
+        tile.append(label, value);
+        box.append(tile);
+      });
+
+    var list = $('events-list');
+    list.replaceChildren();
+    if (!rows.length) {
+      list.append(item('No goals or assists yet', 'Events appear as matches are played', null, ''));
+      return;
+    }
+
+    rows.forEach(function (e) {
+      var p = players.get(e.id) || {};
+      var s = e.stats;
+      var parts = [];
+      if (s.goals_scored) parts.push(s.goals_scored + (s.goals_scored > 1 ? ' goals' : ' goal'));
+      if (s.assists) parts.push(s.assists + (s.assists > 1 ? ' assists' : ' assist'));
+      if (s.clean_sheets) parts.push('clean sheet');
+      if (s.bonus) parts.push('bonus ' + s.bonus);
+      var yourMultiplier = mult.get(e.id) || 0;
+      var ownership = (parseFloat(p.selected_by_percent) || 0) / 100;
+      var vsField = Math.round(s.total_points * (yourMultiplier - ownership) * 10) / 10;
+      var meta = (teams.get(p.team) || '') + ' · ' + parts.join(', ') + ' · ' +
+        (parseFloat(p.selected_by_percent) || 0).toFixed(1) + '% owned · ' +
+        (vsField >= 0 ? '+' : '') + vsField + ' vs average manager';
+
+      var badge = null;
+      if (mine.has(e.id)) {
+        badge = document.createElement('span');
+        badge.className = 'badge vice';
+        badge.textContent = 'Yours';
+      }
+      list.append(item(p.web_name || 'Player', meta, badge, String(s.total_points)));
+    });
+  }
+
+  function paintWhatIf(m) {
+    var select = $('whatif-captain');
+    if (!select) return;
+    var previous = select.value;
+    var current = m.starters.find(function (p) { return p.isCaptain; });
+    select.replaceChildren();
+    m.starters.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).forEach(function (p) {
+      var opt = document.createElement('option');
+      opt.value = String(p.id);
+      opt.textContent = p.name + ' (' + p.points + ' pts)';
+      select.append(opt);
+    });
+    var keep = m.starters.some(function (p) { return String(p.id) === previous; });
+    if (keep) select.value = previous;
+    else if (current) select.value = String(current.id);
+    select.onchange = function () { showWhatIf(m); };
+    showWhatIf(m);
+  }
+
+  function showWhatIf(m) {
+    var select = $('whatif-captain');
+    var out = $('whatif-result');
+    var chosen = m.starters.find(function (p) { return String(p.id) === select.value; });
+    if (!chosen) { out.textContent = ''; return; }
+
+    var captainMultiplier = m.chip === '3xc' ? 3 : 2;
+    var base = m.starters.reduce(function (sum, p) { return sum + p.points; }, 0);
+    var projected = base + chosen.points * (captainMultiplier - 1);
+    var diff = projected - m.total;
+    out.textContent = formatNumber(projected) + ' pts with ' + chosen.name + (chosen.isCaptain
+      ? ' (your current captain)'
+      : ' (' + (diff > 0 ? '+' : '') + diff + ' vs now)');
+  }
+
+  var CHIP_NAMES = {
+    bboost: 'Bench Boost', freehit: 'Free Hit', '3xc': 'Triple Captain',
+    wildcard: 'Wildcard', manager: 'Assistant Manager'
+  };
+
+  function paintMatches(m) {
+    if (!state.boot || !state.fixtures) return;
+    var teams = new Map(state.boot.teams.map(function (t) { return [t.id, t.short_name]; }));
+    var players = new Map(state.boot.elements.map(function (p) { return [p.id, p]; }));
+    var mine = new Set(m.squad.map(function (p) { return p.id; }));
+    var list = $('match-list');
+    list.replaceChildren();
+
+    var fixtures = state.fixtures
+      .filter(function (f) { return f.event === m.gw; })
+      .sort(function (a, b) { return new Date(a.kickoff_time) - new Date(b.kickoff_time); });
+    if (!fixtures.length) {
+      list.append(item('No matches this gameweek', '', null, ''));
+      return;
+    }
+
+    fixtures.forEach(function (f) {
+      var home = teams.get(f.team_h) || '';
+      var away = teams.get(f.team_a) || '';
+      var score = f.started ? (f.team_h_score || 0) + ' – ' + (f.team_a_score || 0) : 'v';
+      var status = f.finished ? 'FT' : f.started ? 'Live' :
+        new Date(f.kickoff_time).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+
+      var labels = { goals_scored: 'Goals', assists: 'Assists', yellow_cards: 'Yellow', red_cards: 'Red', own_goals: 'Own goals' };
+      var parts = [];
+      (f.stats || []).forEach(function (s) {
+        if (!labels[s.identifier]) return;
+        var names = (s.h || []).concat(s.a || []).map(function (x) {
+          var p = players.get(x.element) || {};
+          return (p.web_name || 'Player') + (mine.has(x.element) ? ' ★' : '');
+        });
+        if (names.length) parts.push(labels[s.identifier] + ': ' + names.join(', '));
+      });
+
+      list.append(item(home + '  ' + score + '  ' + away, parts.join(' · ') || 'No events yet', null, status));
+    });
+  }
+
+  function paintOverview(m) {
+    if (!state.boot) return;
+    var event = state.boot.events.find(function (e) { return e.id === m.gw; });
+    var list = $('overview-list');
+    list.replaceChildren();
+    if (!event) return;
+
+    var players = new Map(state.boot.elements.map(function (p) { return [p.id, p]; }));
+    var name = function (id) { return id && players.get(id) ? players.get(id).web_name : '—'; };
+
+    list.append(item('Top scorer', name(event.top_element) + (event.top_element_info ? ' · ' + event.top_element_info.points + ' pts' : ''), null, ''));
+    list.append(item('Highest score', formatNumber(event.highest_score), null, ''));
+    list.append(item('Average score', formatNumber(Math.round(event.average_entry_score || 0)), null, ''));
+    list.append(item('Most captained', name(event.most_captained), null, ''));
+    list.append(item('Most transferred in', name(event.most_transferred_in), null, ''));
+    var chips = (event.chip_plays || []).filter(function (c) { return c.num_played > 0; });
+    if (chips.length) {
+      chips.forEach(function (c) {
+        list.append(item(CHIP_NAMES[c.chip_name] || c.chip_name, formatNumber(c.num_played) + ' managers used it', null, ''));
+      });
+    }
+  }
+
+  function paintLiveDeck(m) {
+    if (!state.boot || !state.live || !state.fixtures) return;
+    var players = new Map(state.boot.elements.map(function (p) { return [p.id, p]; }));
+    var stats = new Map(state.live.elements.map(function (e) { return [e.id, e.stats]; }));
+    var teams = new Map(state.boot.teams.map(function (t) { return [t.id, t.short_name]; }));
+    var mine = new Set(m.squad.map(function (p) { return p.id; }));
+
+    var fixturesFor = function (teamId) {
+      return state.fixtures.filter(function (f) {
+        return f.event === m.gw && (f.team_h === teamId || f.team_a === teamId);
+      });
+    };
+    var counts = { play: 0, to: 0, played: 0, missed: 0 };
+    m.starters.forEach(function (p) {
+      var fx = fixturesFor((players.get(p.id) || {}).team);
+      var minutes = (stats.get(p.id) || {}).minutes || 0;
+      if (fx.some(function (f) { return f.started && !f.finished; })) counts.play++;
+      else if (fx.some(function (f) { return !f.started; })) counts.to++;
+      else if (fx.length && minutes > 0) counts.played++;
+      else if (fx.length) counts.missed++;
+    });
+
+    var box = $('live-status');
+    box.replaceChildren();
+    [['In play', counts.play], ['To play', counts.to], ['Played', counts.played], ['Missed', counts.missed]]
+      .forEach(function (pair) {
+        var tile = document.createElement('div');
+        tile.className = 'stat';
+        var label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = pair[0];
+        var value = document.createElement('span');
+        value.className = 'value';
+        value.textContent = String(pair[1]);
+        tile.append(label, value);
+        box.append(tile);
+      });
+
+    var captain = m.starters.find(function (p) { return p.isCaptain; });
+    var captainList = $('live-captain');
+    captainList.replaceChildren();
+    if (captain) {
+      captainList.append(item(captain.name, (TYPE_NAME[captain.type] || '') + ' · ' + captain.team + ' · ' + captain.minutes + ' min', null, String(captain.counted)));
+    } else {
+      captainList.append(item('No captain set', '', null, ''));
+    }
+
+    var threats = list('live-threats');
+    state.boot.elements
+      .filter(function (p) { return !mine.has(p.id); })
+      .sort(function (a, b) { return (parseFloat(b.selected_by_percent) || 0) - (parseFloat(a.selected_by_percent) || 0); })
+      .slice(0, 5)
+      .forEach(function (p) {
+        var pts = (stats.get(p.id) || {}).total_points || 0;
+        threats.append(item(p.web_name, (teams.get(p.team) || '') + ' · ' + (parseFloat(p.selected_by_percent) || 0).toFixed(1) + '% owned', null, String(pts)));
+      });
+
+    var diffs = list('live-diffs');
+    var differentials = m.starters.filter(function (p) {
+      var owned = parseFloat((players.get(p.id) || {}).selected_by_percent) || 0;
+      return owned < 10;
+    });
+    if (!differentials.length) {
+      diffs.append(item('No differentials in your starting eleven', '', null, ''));
+    } else {
+      differentials.forEach(function (p) {
+        var owned = parseFloat((players.get(p.id) || {}).selected_by_percent) || 0;
+        diffs.append(item(p.name, owned.toFixed(1) + '% owned · ' + p.team, null, String(p.counted)));
+      });
+    }
+  }
+
+  function list(id) {
+    var el = $(id);
+    el.replaceChildren();
+    return el;
+  }
+
+  // ---------- Helpers ----------
+
+  function setError(message) {
+    var el = $('signin-error');
+    el.textContent = message;
+    el.hidden = !message;
+  }
+
+  function setStatus(message) {
+    $('status').textContent = message;
+  }
+
+  function chipName(chip) {
+    return chip.replace(/_/g, ' ').replace(/^\w/, function (c) { return c.toUpperCase(); });
+  }
+
+  function formatNumber(n) {
+    return typeof n === 'number' ? n.toLocaleString('en-GB') : '--';
+  }
+
+  function time(ts) {
+    return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function readJson(key) {
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
+  }
+
+  function writeJson(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage full or blocked */ }
+  }
+})();
+</script>
+</body>
+</html>

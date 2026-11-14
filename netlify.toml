@@ -1,0 +1,115 @@
+# ============================================================
+#  KOPALA FPL — netlify.toml
+# ============================================================
+
+# ── Build ────────────────────────────────────────────────────
+[build]
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+
+# ── Cache Headers ────────────────────────────────────────────
+# Immutable assets (JS, CSS, images, fonts, icons)
+# max-age=31536000 = 1 year. "immutable" tells the browser
+# never to revalidate — these files never change at a given URL.
+# When you deploy a new version, Netlify serves new URLs/hashes.
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# HTML — never cache, always fresh
+# Users must always get the latest HTML so SW + JS updates land immediately.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Manifest — short cache, needs to stay fresh for PWA installs
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# Service worker — NEVER cache, browser must always get latest
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# CORS — allow all origins on every route (needed for PWA + API calls)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+
+# ── Security Headers ─────────────────────────────────────────
+# Adds baseline security hardening on all HTML responses.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    X-Content-Type-Options    = "nosniff"
+    X-Frame-Options           = "DENY"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Permissions-Policy        = "camera=(), microphone=(), geolocation=()"
+
+
+# ── Redirects ────────────────────────────────────────────────
+# Single canonical FPL proxy redirect.
+# All duplicates removed — Netlify only needs one rule per pattern.
+
+[[redirects]]
+  from   = "/fpl-api/*"
+  to     = "https://fantasy.premierleague.com/api/:splat"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/api/fpl/*"
+  to     = "https://fantasy.premierleague.com/api/:splat"
+  status = 200
+  force  = true

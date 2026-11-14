@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KopalaFPL">
+<link rel="icon" href="/logo.png">
+<title>Live Dashboard, KopalaFPL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Design system ---------- */
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-2: #273449;
+    --border: #334155;
+    --ink: #f1f5f9;
+    --muted: #94a3b8;
+    --emerald: #10b981;
+    --crimson: #ef4444;
+    --blue: #3b82f6;
+    --radius: 14px;
+    --font: "Plus Jakarta Sans", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.45; }
+  body { min-height: 100vh; }
+  body.has-tabbar { padding-bottom: 84px; }
+  h1, h2, h3, p { margin: 0; }
+  [hidden] { display: none !important; }
+  .num { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* ---------- Sticky control bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding: 10px 16px; background: rgba(15, 23, 42, .92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
+  .brand img { border-radius: 6px; }
+  .team-form { display: flex; gap: 8px; }
+  .field {
+    width: 150px; padding: 9px 12px; border-radius: 10px; font: 600 14px var(--font);
+    color: var(--ink); background: var(--surface-2); border: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .field::placeholder { color: var(--muted); }
+  .btn {
+    padding: 9px 14px; border-radius: 10px; border: 0; background: var(--blue); color: #fff;
+    font: 700 14px var(--font); cursor: pointer;
+  }
+  .sync {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--muted);
+  }
+  .sync i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .sync.live { color: var(--ink); }
+  .sync.live i { background: var(--emerald); animation: pulse 1.6s ease-out infinite; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .55); }
+    70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+  .pill {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); font: 600 13px var(--font); cursor: pointer; white-space: nowrap;
+  }
+  .pill[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* ---------- Layout ---------- */
+  .layout {
+    display: grid; gap: 16px; padding: 16px; max-width: 1280px; margin: 0 auto;
+    grid-template-columns: minmax(0, 1fr); max-width: 960px; align-items: start;
+  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .status { color: var(--muted); font-size: 13px; min-height: 1.4em; margin-top: 12px; }
+
+  /* ---------- Table ---------- */
+  .table-wrap { overflow-x: auto; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  .tbl th, .tbl td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  .tbl th button {
+    background: none; border: 0; padding: 0; color: var(--muted); font: 700 12px var(--font);
+    cursor: pointer; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .tbl th[aria-sort] button, .tbl th button:hover { color: var(--ink); }
+  .tbl th[aria-sort="ascending"]::after { content: " ▲"; color: var(--blue); }
+  .tbl th[aria-sort="descending"]::after { content: " ▼"; color: var(--blue); }
+  .tbl .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl td.pts { font-weight: 800; font-size: 14px; }
+  .tbl th.group { background: var(--bg); color: var(--ink); font-size: 14px; font-weight: 800; padding: 14px 8px 8px; border-bottom: 1px solid var(--border); text-transform: none; letter-spacing: 0; }
+  .mark { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 8px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 10px; font-weight: 800; vertical-align: middle; }
+  .tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--muted); }
+  .tag.play { background: rgba(59,130,246,.18); color: #93c5fd; }
+  .tag.done { background: rgba(16,185,129,.16); color: #6ee7b7; }
+  .tag.missed { background: rgba(239,68,68,.16); color: #fca5a5; }
+  .pos-up { color: var(--emerald); }
+  .pos-down { color: var(--crimson); }
+
+  /* ---------- View toggle ---------- */
+  .seg { display: inline-flex; padding: 3px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; }
+  .seg button { padding: 6px 14px; border: 0; border-radius: 999px; background: none; color: var(--muted); font: 700 13px var(--font); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+
+  /* ---------- 3D pitch ---------- */
+  .pitch-stage {
+    position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: var(--radius);
+    perspective: 900px; background: radial-gradient(ellipse at 50% 20%, #1e2a44 0%, var(--bg) 70%);
+  }
+  .pitch-stage[hidden] { display: none; }
+  .pitch-plane {
+    position: absolute; left: 6%; right: 6%; top: 10%; bottom: 4%;
+    transform: rotateX(34deg); transform-origin: 50% 100%; transform-style: preserve-3d;
+    border-radius: 12px; border: 2px solid rgba(255,255,255,.45);
+    background: repeating-linear-gradient(0deg, #15803d 0 12.5%, #166534 12.5% 25%);
+    box-shadow: 0 40px 70px rgba(0,0,0,.5);
+  }
+  .pitch-plane::before {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 30%; aspect-ratio: 1;
+    transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,.4); border-radius: 50%;
+  }
+  .pitch-plane::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,.4);
+  }
+  .pitch-players { position: absolute; inset: 0; }
+  .pslot {
+    position: absolute; width: 84px; transform: translate(-50%, -50%); text-align: center;
+  }
+  .pitch-stage.enter .pslot { animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translate(-50%, -20%) scale(.85); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  .shirt-card {
+    position: relative; padding: 7px 4px 6px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 12px 24px rgba(0,0,0,.45);
+  }
+  .pslot.is-cap .shirt-card { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue), 0 12px 24px rgba(0,0,0,.45); }
+  .pname { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pslot-pts { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .eo-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 10px; font-weight: 700;
+    background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .armband {
+    position: absolute; top: -9px; left: -9px; width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--blue); color: #fff;
+    font-size: 11px; font-weight: 800; border: 2px solid var(--surface);
+  }
+  .armband.vice { background: var(--surface-2); color: var(--ink); }
+  .bench-strip { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; padding: 0 8px; }
+  .bench-item { position: relative; width: 72px; transform: none; }
+  .pitch-stage .bench-item { animation: none; }
+  @media (max-width: 520px) {
+    .pslot { width: 66px; }
+    .pslot-pts { font-size: 17px; }
+    .pname { font-size: 11px; }
+    .bench-item { width: 62px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .pitch-stage.enter .pslot { animation: none; } }
+
+  /* ---------- What-if and league chips ---------- */
+  .whatif { display: grid; gap: 10px; }
+  .whatif select { width: 100%; padding: 12px; font: 600 15px var(--font); color: var(--ink); background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+  .whatif-result { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .chip-list { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-list li { display: inline-flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+  .chip-remove { width: 24px; height: 24px; border: 0; border-radius: 50%; background: var(--bg); color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
+  .chip-remove:hover { color: var(--crimson); }
+
+  /* ---------- Rank, league, prices ---------- */
+  .big { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+  .kv { background: var(--surface-2); border-radius: 12px; padding: 12px; }
+  .kv span { display: block; color: var(--muted); font-size: 12px; }
+  .kv b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .league-list { display: grid; gap: 8px; margin-bottom: 12px; }
+  .league-list button {
+    text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--ink); font: 600 14px var(--font); cursor: pointer;
+  }
+  .league-list button[aria-pressed="true"] { border-color: var(--blue); background: rgba(59,130,246,.15); }
+  .rows { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .rows td { padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  .rows td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .rows tr.me td { color: var(--blue); font-weight: 700; }
+  .price-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .price-cols h3 { font-size: 13px; margin-bottom: 8px; color: var(--muted); font-weight: 700; }
+
+  /* ---------- Panel switching (driven by the filter pills) ---------- */
+  [data-panel] { display: none; }
+  body[data-filter="my"] [data-panel="table"],
+  body[data-filter="rank"] [data-panel="rank"],
+  body[data-filter="league"] [data-panel="league"],
+  body[data-filter="prices"] [data-panel="prices"] { display: block; }
+
+  /* ---------- Mobile: stacked, with a sticky bottom tab bar ---------- */
+  .tabbar { display: none; }
+  @media (max-width: 899px) {
+    .layout { grid-template-columns: 1fr; padding: 12px; }
+    .pills { display: none; }
+    .tabbar {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+      background: var(--surface); border-top: 1px solid var(--border);
+    }
+    .tabbar button {
+      padding: 10px 4px; border: 0; border-radius: 10px; background: none; color: var(--muted);
+      font: 700 12px var(--font); cursor: pointer;
+    }
+    .tabbar button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+    .team-form { width: 100%; }
+    .field { flex: 1; width: auto; }
+    .pills { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .sync.live i { animation: none; } }
+</style>
+</head>
+<body data-filter="my">
+
+<header class="topbar">
+  <span class="brand"><img src="/logo.png" alt="" width="28" height="28">KopalaFPL</span>
+  <form class="team-form" id="teamForm" novalidate>
+    <label for="teamId" class="muted" style="position:absolute;left:-9999px">FPL team ID</label>
+    <input class="field num" id="teamId" inputmode="numeric" autocomplete="off" maxlength="9" placeholder="Team ID">
+    <button class="btn" type="submit">Load</button>
+  </form>
+  <span class="sync" id="sync"><i aria-hidden="true"></i><span id="syncText">Idle</span></span>
+  <nav class="pills" aria-label="Views">
+    <button class="pill" type="button" data-filter-btn="my" aria-pressed="true">My Team</button>
+    <button class="pill" type="button" data-filter-btn="rank" aria-pressed="false">Live Rank</button>
+    <button class="pill" type="button" data-filter-btn="league" aria-pressed="false">Mini-League</button>
+    <button class="pill" type="button" data-filter-btn="prices" aria-pressed="false">Price Changes</button>
+  </nav>
+</header>
+
+<main class="layout">
+  <section class="card" data-panel="table" aria-labelledby="table-title">
+    <h2 id="table-title">Squad <span class="muted" id="squadTotal"></span></h2>
+    <div class="seg" role="group" aria-label="Squad view">
+      <button type="button" data-view-btn="list" aria-pressed="true">List</button>
+      <button type="button" data-view-btn="pitch" aria-pressed="false">Pitch</button>
+    </div>
+    <div class="pitch-stage" id="pitchView" hidden>
+      <div class="pitch-plane"></div>
+      <div class="pitch-players" id="pitchPlayers"></div>
+      <div class="bench-strip" id="pitchBench"></div>
+    </div>
+    <div class="table-wrap" id="listView">
+      <table class="tbl" id="squadTable">
+        <thead>
+          <tr>
+            <th scope="col" aria-sort="none"><button type="button" data-sort="name">Player</button></th>
+            <th scope="col" class="r" aria-sort="descending"><button type="button" data-sort="points">Pts</button></th>
+            <th scope="col" class="r" aria-sort="none"><button type="button" data-sort="minutes">Mins</button></th>
+            <th scope="col" class="r" aria-sort="none"><button type="button" data-sort="goals">G</button></th>
+            <th scope="col" class="r" aria-sort="none"><button type="button" data-sort="assists">A</button></th>
+            <th scope="col" class="r" aria-sort="none"><button type="button" data-sort="cs">CS</button></th>
+            <th scope="col" class="r" aria-sort="none"><button type="button" data-sort="eo">EO</button></th>
+            <th scope="col" aria-sort="none"><button type="button" data-sort="status">Status</button></th>
+          </tr>
+        </thead></thead>
+        <tbody class="group-head"><tr><th scope="colgroup" colspan="8" class="group">Goalkeepers</th></tr></tbody>
+<tbody id="sq-1"></tbody>
+<tbody class="group-head"><tr><th scope="colgroup" colspan="8" class="group">Defenders</th></tr></tbody>
+<tbody id="sq-2"></tbody>
+<tbody class="group-head"><tr><th scope="colgroup" colspan="8" class="group">Midfielders</th></tr></tbody>
+<tbody id="sq-3"></tbody>
+<tbody class="group-head"><tr><th scope="colgroup" colspan="8" class="group">Forwards</th></tr></tbody>
+<tbody id="sq-4"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" data-panel="table" aria-labelledby="whatif-title">
+    <h2 id="whatif-title">What-if: captain</h2>
+    <div class="whatif">
+      <label for="whatifCaptain" class="muted">Choose a captain to test</label>
+      <select id="whatifCaptain"></select>
+      <p class="whatif-result" id="whatifResult" aria-live="polite"></p>
+      <p class="muted">Uses live points so far and assumes a doubled captain bonus, or tripled with Triple Captain.</p>
+    </div>
+  </section>
+
+  <section class="card" data-panel="rank" aria-labelledby="rank-title">
+    <h2 id="rank-title">Live Rank <span class="muted" id="rankGw"></span></h2>
+    <div class="big" id="rankVal">--</div>
+    <p class="muted" id="rankChange">Overall rank</p>
+    <div class="grid2">
+      <div class="kv"><span>Gameweek points</span><b id="gwPts">--</b></div>
+      <div class="kv"><span>Overall points</span><b id="overallPts">--</b></div>
+      <div class="kv"><span>Points hit</span><b id="hitPts">--</b></div>
+      <div class="kv"><span>Captain points</span><b id="capPts">--</b></div>
+    </div>
+    <p class="muted" style="margin-top:12px">Overall rank from FPL. A live rank for the whole field needs a sampled rank table, which this page doesn't include yet.</p>
+  </section>
+
+  <section class="card" data-panel="league" aria-labelledby="league-title">
+    <h2 id="league-title">Mini-League</h2>
+    <form id="leagueForm" class="team-form" style="margin-bottom:12px"><input class="field num" id="leagueId" inputmode="numeric" placeholder="League ID" maxlength="12" autocomplete="off"><button class="btn" type="submit">Add league</button></form>
+    <ul class="chip-list" id="leagueChips" aria-label="Favourite leagues"></ul>
+    <p id="leagueName" class="muted" style="margin-bottom:8px"></p>
+    <table class="rows" aria-label="League standings"><tbody id="leagueBody"></tbody></table>
+    <p class="muted" id="leagueNote" style="margin-top:10px">Top 10 of the selected league.</p>
+  </section>
+
+  <section class="card" data-panel="prices" aria-labelledby="prices-title">
+    <h2 id="prices-title">Price Changes <span class="muted">net transfers</span></h2>
+    <div class="price-cols">
+      <div><h3>Rising</h3><table class="rows"><tbody id="risingBody"></tbody></table></div>
+      <div><h3>Falling</h3><table class="rows"><tbody id="fallingBody"></tbody></table></div>
+    </div>
+    <p class="muted" style="margin-top:12px">These are net transfers this gameweek, not price predictions. Official price changes are on the <a href="https://fantasy.premierleague.com/" target="_blank" rel="noopener" style="color:#93c5fd">FPL website</a>.</p>
+  </section>
+
+  <p class="status" id="status" role="status"></p>
+</main>
+
+<nav class="tabbar" aria-label="Main">
+  <button type="button" data-filter-btn="my" aria-pressed="true">My Team</button>
+  <button type="button" data-filter-btn="rank" aria-pressed="false">Rank</button>
+  <button type="button" data-filter-btn="league" aria-pressed="false">Leagues</button>
+  <button type="button" data-filter-btn="prices" aria-pressed="false">Prices</button>
+</nav>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
